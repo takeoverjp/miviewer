@@ -8,28 +8,29 @@ from matplotlib import animation
 from argparse import ArgumentParser
 import subprocess
 
-TYPES = {"active": ["MemFree",
-                   "Active(file)",
-                   "Inactive(file)",
-                   "Unevictable",
-                   "Active(anon)",
-                   "Inactive(anon)",
+GRAPH_TYPES = {
+    "active": ["MemFree",
+               "Active(file)",
+               "Inactive(file)",
+               "Unevictable",
+               "Active(anon)",
+               "Inactive(anon)",
+               "SReclaimable",
+               "SUnreclaim",
+               "KernelStack",
+               "PageTables",
+               "VmallocUsed"],
+    "buff-cache": ["MemFree",
+                   "Buffers",
+                   "Cached",
+                   "AnonPages",
                    "SReclaimable",
                    "SUnreclaim",
                    "KernelStack",
                    "PageTables",
                    "VmallocUsed"],
-        "buff-cache": ["MemFree",
-                       "Buffers",
-                       "Cached",
-                       "AnonPages",
-                       "SReclaimable",
-                       "SUnreclaim",
-                       "KernelStack",
-                       "PageTables",
-                       "VmallocUsed"],
-        "available": ["MemAvailable", "@MemNotAvailable"],
-        "user-kernel": ["MemFree", "@UserSpace", "@KernelSpace"]}
+    "available": ["MemAvailable", "@MemNotAvailable"],
+    "user-kernel": ["MemFree", "@UserSpace", "@KernelSpace"]}
 
 def get_meminfo(from_adb):
     if from_adb:
@@ -145,8 +146,10 @@ def update_graph(frame, axes, x, y, keys, window, from_adb):
 
     plt.plot()
 
-def draw_graph(interval, frames, window, keys, from_adb):
+def draw_graph(interval, frames, window, graph_type, from_adb):
     fig, axes = plt.subplots()
+    fig.suptitle("/proc/meminfo ({})".format(graph_type))
+    keys = GRAPH_TYPES[graph_type]
 
     # Shrink x-axis for legend
     box = axes.get_position()
@@ -198,7 +201,7 @@ def main():
     draw_graph(args.interval,
                args.count,
                args.window,
-               TYPES[args.type],
+               args.type,
                args.adb)
 
 if __name__ == "__main__":
