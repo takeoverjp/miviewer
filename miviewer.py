@@ -30,6 +30,18 @@ def check_mem_available(mi):
     diff = avail1 - avail2
     print("MemAvailable diff: {} kB".format(diff))
 
+def check_active(mi):
+    active1 = mi["Active"]
+    active2 = mi["Active(file)"] + mi["Active(anon)"]
+    diff = active1 - active2
+    print("Active diff: {} kB".format(diff))
+
+def check_inactive(mi):
+    inactive1 = mi["Inactive"]
+    inactive2 = mi["Inactive(file)"] + mi["Inactive(anon)"]
+    diff = inactive1 - inactive2
+    print("Inactive diff: {} kB".format(diff))
+
 def check_file_backed(mi):
     file_backed1 = mi["Buffers"] + mi["Cached"]
     file_backed2 = mi["Active(file)"] + mi["Inactive(file)"] + mi["Shmem"]
@@ -68,6 +80,8 @@ def check_total(mi):
 
 def check_meminfo(mi):
     check_mem_available(mi)
+    check_active(mi)
+    check_inactive(mi)
     check_file_backed(mi)
     check_anon(mi)
     check_user_space(mi)
