@@ -123,23 +123,24 @@ def parse_meminfo(mi_str):
 
 # XXX: frame 0 is passed twice. So using global counter.
 update_count = 0
-def update_graph(frame, axes, x, y, keys, window, from_adb):
+def update_graph(frame, axes, x, y, keys, window, interval_ms, from_adb):
     global update_count
 
     plt.cla()
 
     mi = parse_meminfo(get_meminfo(from_adb))
 
-    x.append(update_count)
+    current_sec = update_count * interval_ms / 1000
+    x.append(current_sec)
     for idx, key in enumerate(keys):
         y[idx].append(mi[key])
 
-    if len(x) > window + 1:
+    if len(x) > window * 1000 / interval_ms + 1:
         x.pop(0)
         for yelem in y:
             yelem.pop(0)
 
-    xstart = max([0, update_count - window])
+    xstart = max([0, current_sec - window])
     plt.xlim(xstart, xstart + window)
     axes.stackplot(x, np.vstack(y), labels=keys)
 
@@ -154,7 +155,7 @@ def update_graph(frame, axes, x, y, keys, window, from_adb):
 
     update_count += 1
 
-def draw_graph(interval, frames, window, graph_type, from_adb):
+def draw_graph(interval_ms, frames, window, graph_type, from_adb):
     fig, axes = plt.subplots()
     fig.suptitle("/proc/meminfo ({})".format(graph_type))
     keys = GRAPH_TYPES[graph_type]
@@ -169,8 +170,8 @@ def draw_graph(interval, frames, window, graph_type, from_adb):
     params = {
         "fig": fig,
         "func": update_graph,
-        "fargs": (axes, x, y, keys, window, from_adb),
-        "interval": interval * 1000,
+        "fargs": (axes, x, y, keys, window, interval_ms, from_adb),
+        "interval": interval_ms,
         "frames": frames,
         "repeat": False,
     }
@@ -183,16 +184,16 @@ def parse_option():
     ap.add_argument("-a", "--adb", action="store_true",
                     help="Get meminfo via adb.")
     ap.add_argument("-i", "--interval", type=int,
-                    default=1,
-                    help="The delay between updates in seconds. Default is 1.")
+                    default=200,
+                    help="The delay between updates in milli-seconds. Default is 200.")
     ap.add_argument("-c", "--count", type=int,
                     default=None,
                     help="Number of updates.  Default is infinite.")
     ap.add_argument("--check", action="store_true",
                     help="Check some formulas.")
     ap.add_argument("-w", "--window", type=int,
-                    default=120,
-                    help="Number of shown.  Default is 120.")
+                    default=60,
+                    help="Shown period time in seconds.  Default is 60.")
     ap.add_argument("-t", "--type", choices=["active", "buff-cache", "available", "user-kernel"],
                     default="active",
                     help="Graph type. Default is active.")
