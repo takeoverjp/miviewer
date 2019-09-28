@@ -6,11 +6,15 @@ from functools import reduce
 import matplotlib.pyplot as plt
 from matplotlib import animation
 from argparse import ArgumentParser
+import subprocess
 
 
-def get_meminfo():
-    with open("/proc/meminfo", "r") as file:
-        mi_str = file.read()
+def get_meminfo(from_adb):
+    if from_adb:
+        mi_str = subprocess.check_output(["adb", "shell", "cat", "/proc/meminfo"]).decode()
+    else:
+        with open("/proc/meminfo", "r") as file:
+            mi_str = file.read()
     return mi_str
 
 def parse_meminfo_line(mi, line):
@@ -75,10 +79,10 @@ def parse_meminfo(mi_str):
     mi = reduce(parse_meminfo_line, mi_lines, {})
     return mi
 
-def update_graph(frame, axes, x, y, keys, window):
+def update_graph(frame, axes, x, y, keys, window, from_adb):
     plt.cla()
 
-    mi = parse_meminfo(get_meminfo())
+    mi = parse_meminfo(get_meminfo(from_adb))
 
     x.append(frame)
     for idx, key in enumerate(keys):
@@ -94,7 +98,7 @@ def update_graph(frame, axes, x, y, keys, window):
 
     plt.plot()
 
-def draw_graph(interval, frames, window, keys):
+def draw_graph(interval, frames, window, keys, from_adb):
     fig, axes = plt.subplots()
 
     x = []
@@ -103,7 +107,7 @@ def draw_graph(interval, frames, window, keys):
     params = {
         "fig": fig,
         "func": update_graph,
-        "fargs": (axes, x, y, keys, window),
+        "fargs": (axes, x, y, keys, window, from_adb),
         "interval": interval * 1000,
         "frames": frames,
         "repeat": False,
@@ -114,6 +118,8 @@ def draw_graph(interval, frames, window, keys):
 
 def parse_option():
     ap = ArgumentParser()
+    ap.add_argument("-a", "--adb", action="store_true",
+                    help="Get meminfo via adb.")
     ap.add_argument("-i", "--interval", type=int,
                     default=1,
                     help="The delay between updates in seconds. Default is 1.")
@@ -131,7 +137,7 @@ def main():
     args = parse_option()
 
     if args.check:
-        mi = parse_meminfo(get_meminfo())
+        mi = parse_meminfo(get_meminfo(args.adb))
         check_meminfo(mi)
         exit()
 
@@ -148,7 +154,8 @@ def main():
                 "SUnreclaim",
                 "KernelStack",
                 "PageTables",
-                "VmallocUsed"])
+                "VmallocUsed"],
+               args.adb)
 
 if __name__ == "__main__":
     main()
