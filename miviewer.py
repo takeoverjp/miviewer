@@ -135,12 +135,22 @@ def update_graph(frame, axes, x, y, keys, window, from_adb):
             yelem.pop(0)
 
     axes.stackplot(x, np.vstack(y), labels=keys)
-    axes.legend(loc="upper left")
+
+    handles, labels = axes.get_legend_handles_labels()
+    axes.legend(
+        # Change the legend order to be same as the line order.
+        handles[::-1], labels[::-1],
+        # Locate the legend outside of graph.
+        bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
 
     plt.plot()
 
 def draw_graph(interval, frames, window, keys, from_adb):
     fig, axes = plt.subplots()
+
+    # Shrink x-axis for legend
+    box = axes.get_position()
+    axes.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
     x = []
     y = [[] for i in keys]
