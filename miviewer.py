@@ -8,6 +8,28 @@ from matplotlib import animation
 from argparse import ArgumentParser
 import subprocess
 
+TYPES = {"active": ["MemFree",
+                   "Active(file)",
+                   "Inactive(file)",
+                   "Unevictable",
+                   "Active(anon)",
+                   "Inactive(anon)",
+                   "SReclaimable",
+                   "SUnreclaim",
+                   "KernelStack",
+                   "PageTables",
+                   "VmallocUsed"],
+        "buff-cache": ["MemFree",
+                       "Buffers",
+                       "Cached",
+                       "AnonPages",
+                       "SReclaimable",
+                       "SUnreclaim",
+                       "KernelStack",
+                       "PageTables",
+                       "VmallocUsed"],
+        "available": ["MemAvailable", "@MemNotAvailable"],
+        "user-kernel": ["MemFree", "@UserSpace", "@KernelSpace"]}
 
 def get_meminfo(from_adb):
     if from_adb:
@@ -91,6 +113,11 @@ def check_meminfo(mi):
 def parse_meminfo(mi_str):
     mi_lines = mi_str.splitlines()
     mi = reduce(parse_meminfo_line, mi_lines, {})
+    mi["@MemNotAvailable"] = mi["MemTotal"] - mi["MemAvailable"]
+    mi["@UserSpace"] = mi["AnonPages"] + mi["Buffers"] + mi["Cached"]
+    mi["@FileBacked"] = mi["Buffers"] + mi["Cached"]
+    mi["@Anonymous"] = mi["Active(anon)"] + mi["Inactive(anon)"]
+    mi["@KernelSpace"] = mi["MemTotal"] - mi["MemFree"] - mi["@UserSpace"]
     return mi
 
 def update_graph(frame, axes, x, y, keys, window, from_adb):
@@ -145,6 +172,9 @@ def parse_option():
     ap.add_argument("-w", "--window", type=int,
                     default=120,
                     help="Number of shown.  Default is 120.")
+    ap.add_argument("-t", "--type", choices=["active", "buff-cache", "available", "user-kernel"],
+                    default="active",
+                    help="Graph type. Default is active.")
     return ap.parse_args()
 
 def main():
@@ -158,17 +188,7 @@ def main():
     draw_graph(args.interval,
                args.count,
                args.window,
-               ["MemFree",
-                "Active(file)",
-                "Inactive(file)",
-                "Unevictable",
-                "Active(anon)",
-                "Inactive(anon)",
-                "SReclaimable",
-                "SUnreclaim",
-                "KernelStack",
-                "PageTables",
-                "VmallocUsed"],
+               TYPES[args.type],
                args.adb)
 
 if __name__ == "__main__":
