@@ -80,7 +80,18 @@ def main():
     draw_graph(args.interval,
                args.count,
                args.window,
-               ["MemFree", "Buffers", "Cached"])
+               ["MemFree",
+                "Active(file)",
+                "Inactive(file)",
+                "Unevictable",
+                "Active(anon)",
+                "Inactive(anon)",
+                "SReclaimable",
+                "SUnreclaim",
+                "Slab",
+                "KernelStack",
+                "PageTables",
+                "VmallocUsed"])
 
 if __name__ == "__main__":
     main()
