@@ -6,6 +6,7 @@ from functools import reduce
 import matplotlib.pyplot as plt
 from matplotlib import animation
 from argparse import ArgumentParser
+import time
 import subprocess
 
 GRAPH_TYPES = {
@@ -31,6 +32,8 @@ GRAPH_TYPES = {
                    "VmallocUsed"],
     "available": ["MemAvailable", "@MemNotAvailable"],
     "user-kernel": ["MemFree", "@UserSpace", "@KernelSpace"]}
+
+PERF=False
 
 def get_meminfo(from_adb):
     if from_adb:
@@ -126,14 +129,19 @@ update_count = 0
 def update_graph(frame, axes, x, y, keys, window, interval_ms, from_adb):
     global update_count
 
+    if PERF:
+        time_start = time.perf_counter()
+
     plt.cla()
+    plt.xlabel("[sec]")
+    plt.ylabel("[GB]")
 
     mi = parse_meminfo(get_meminfo(from_adb))
 
     current_sec = update_count * interval_ms / 1000
     x.append(current_sec)
     for idx, key in enumerate(keys):
-        y[idx].append(mi[key])
+        y[idx].append(mi[key] / 1024 / 1024)
 
     if len(x) > window * 1000 / interval_ms + 1:
         x.pop(0)
@@ -154,6 +162,10 @@ def update_graph(frame, axes, x, y, keys, window, interval_ms, from_adb):
     plt.plot()
 
     update_count += 1
+
+    if PERF:
+        time_end = time.perf_counter()
+        print("elapsed = {}".format(time_end - time_start))
 
 def draw_graph(interval_ms, frames, window, graph_type, from_adb):
     fig, axes = plt.subplots()
