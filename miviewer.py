@@ -114,17 +114,17 @@ def draw_graph(interval, frames, window, keys):
 
 def parse_option():
     ap = ArgumentParser()
-    ap.add_argument('-i', '--interval', type=int,
-                           default=1,
-                           help='The delay between updates in seconds. Default is 1.')
-    ap.add_argument('-c', '--count', type=int,
-                           default=None,
-                           help='Number of updates.  Default is infinite.')
+    ap.add_argument("-i", "--interval", type=int,
+                    default=1,
+                    help="The delay between updates in seconds. Default is 1.")
+    ap.add_argument("-c", "--count", type=int,
+                    default=None,
+                    help="Number of updates.  Default is infinite.")
     ap.add_argument("--check", action="store_true",
-                           help="Check some formulas.")
-    ap.add_argument('-w', '--window', type=int,
-                           default=120,
-                           help='Number of shown.  Default is 120.')
+                    help="Check some formulas.")
+    ap.add_argument("-w", "--window", type=int,
+                    default=120,
+                    help="Number of shown.  Default is 120.")
     return ap.parse_args()
 
 def main():
