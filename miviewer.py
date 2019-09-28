@@ -121,20 +121,26 @@ def parse_meminfo(mi_str):
     mi["@KernelSpace"] = mi["MemTotal"] - mi["MemFree"] - mi["@UserSpace"]
     return mi
 
+# XXX: frame 0 is passed twice. So using global counter.
+update_count = 0
 def update_graph(frame, axes, x, y, keys, window, from_adb):
+    global update_count
+
     plt.cla()
 
     mi = parse_meminfo(get_meminfo(from_adb))
 
-    x.append(frame)
+    x.append(update_count)
     for idx, key in enumerate(keys):
         y[idx].append(mi[key])
 
-    if len(x) > window:
+    if len(x) > window + 1:
         x.pop(0)
         for yelem in y:
             yelem.pop(0)
 
+    xstart = max([0, update_count - window])
+    plt.xlim(xstart, xstart + window)
     axes.stackplot(x, np.vstack(y), labels=keys)
 
     handles, labels = axes.get_legend_handles_labels()
@@ -145,6 +151,8 @@ def update_graph(frame, axes, x, y, keys, window, from_adb):
         bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
 
     plt.plot()
+
+    update_count += 1
 
 def draw_graph(interval, frames, window, graph_type, from_adb):
     fig, axes = plt.subplots()
