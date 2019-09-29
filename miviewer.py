@@ -33,8 +33,6 @@ GRAPH_TYPES = {
     "available": ["MemAvailable", "@MemNotAvailable"],
     "user-kernel": ["MemFree", "@UserSpace", "@KernelSpace"]}
 
-PERF=False
-
 def get_meminfo(from_adb):
     if from_adb:
         mi_str = subprocess.check_output(["adb", "shell", "cat", "/proc/meminfo"]).decode()
@@ -124,31 +122,24 @@ def parse_meminfo(mi_str):
     mi["@KernelSpace"] = mi["MemTotal"] - mi["MemFree"] - mi["@UserSpace"]
     return mi
 
-# XXX: frame 0 is passed twice. So using global counter.
-update_count = 0
-def update_graph(frame, axes, x, y, keys, window, interval_ms, from_adb):
-    global update_count
-
-    if PERF:
-        time_start = time.perf_counter()
-
+def update_graph(frame, axes, x, y, keys, window, time_start, from_adb):
     plt.cla()
     plt.xlabel("[sec]")
     plt.ylabel("[GB]")
 
     mi = parse_meminfo(get_meminfo(from_adb))
+    time_offset = time.perf_counter() - time_start
 
-    current_sec = update_count * interval_ms / 1000
-    x.append(current_sec)
+    x.append(time_offset)
     for idx, key in enumerate(keys):
         y[idx].append(mi[key] / 1024 / 1024)
 
-    if len(x) > window * 1000 / interval_ms + 1:
+    while x[-1] - x[0] > window:
         x.pop(0)
         for yelem in y:
             yelem.pop(0)
 
-    xstart = max([0, current_sec - window])
+    xstart = max([0, time_offset - window])
     plt.xlim(xstart, xstart + window)
     axes.stackplot(x, np.vstack(y), labels=keys)
 
@@ -161,12 +152,6 @@ def update_graph(frame, axes, x, y, keys, window, interval_ms, from_adb):
 
     plt.plot()
 
-    update_count += 1
-
-    if PERF:
-        time_end = time.perf_counter()
-        print("elapsed = {}".format(time_end - time_start))
-
 def draw_graph(interval_ms, frames, window, graph_type, from_adb):
     fig, axes = plt.subplots()
     fig.suptitle("/proc/meminfo ({})".format(graph_type))
@@ -178,11 +163,12 @@ def draw_graph(interval_ms, frames, window, graph_type, from_adb):
 
     x = []
     y = [[] for i in keys]
+    time_start = time.perf_counter()
 
     params = {
         "fig": fig,
         "func": update_graph,
-        "fargs": (axes, x, y, keys, window, interval_ms, from_adb),
+        "fargs": (axes, x, y, keys, window, time_start, from_adb),
         "interval": interval_ms,
         "frames": frames,
         "repeat": False,
