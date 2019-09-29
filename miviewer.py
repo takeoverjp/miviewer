@@ -20,7 +20,8 @@ GRAPH_TYPES = {
                "SUnreclaim",
                "KernelStack",
                "PageTables",
-               "VmallocUsed"],
+               "VmallocUsed",
+               "@Unknown(active)"],
     "buff-cache": ["MemFree",
                    "Buffers",
                    "Cached",
@@ -29,7 +30,8 @@ GRAPH_TYPES = {
                    "SUnreclaim",
                    "KernelStack",
                    "PageTables",
-                   "VmallocUsed"],
+                   "VmallocUsed",
+                   "@Unknown(buff-cache)"],
     "available": ["MemAvailable", "@MemNotAvailable"],
     "user-kernel": ["MemFree", "@UserSpace", "@KernelSpace"]}
 
@@ -120,6 +122,10 @@ def parse_meminfo(mi_str):
     mi["@FileBacked"] = mi["Buffers"] + mi["Cached"]
     mi["@Anonymous"] = mi["Active(anon)"] + mi["Inactive(anon)"]
     mi["@KernelSpace"] = mi["MemTotal"] - mi["MemFree"] - mi["@UserSpace"]
+    total_active = sum(map(lambda x: mi[x], GRAPH_TYPES["active"][:-2]))
+    mi["@Unknown(active)"] = mi["MemTotal"] - total_active
+    total_buff_cache = sum(map(lambda x: mi[x], GRAPH_TYPES["buff-cache"][:-2]))
+    mi["@Unknown(buff-cache)"] = mi["MemTotal"] - total_buff_cache
     return mi
 
 def update_graph(frame, axes, x, y, keys, window, time_start, from_adb):
